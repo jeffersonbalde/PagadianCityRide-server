@@ -59,9 +59,16 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+            'options' => extension_loaded('pdo_mysql') ? array_merge(
+                array_filter([
+                    (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+                ]),
+                // A managed database (DigitalOcean) only talks over SSL, with a certificate that the server does not
+                // know. Set this to false there. It is not set at all on a computer where the database is local.
+                env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT') === null ? [] : [
+                    (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_VERIFY_SERVER_CERT : PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT) => (bool) env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT'),
+                ],
+            ) : [],
         ],
 
         'mariadb' => [
@@ -79,9 +86,16 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+            'options' => extension_loaded('pdo_mysql') ? array_merge(
+                array_filter([
+                    (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+                ]),
+                // A managed database (DigitalOcean) only talks over SSL, with a certificate that the server does not
+                // know. Set this to false there. It is not set at all on a computer where the database is local.
+                env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT') === null ? [] : [
+                    (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_VERIFY_SERVER_CERT : PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT) => (bool) env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT'),
+                ],
+            ) : [],
         ],
 
         'pgsql' => [
