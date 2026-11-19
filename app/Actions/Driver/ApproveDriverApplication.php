@@ -53,7 +53,7 @@ class ApproveDriverApplication
     private function tell(DriverProfile $driverProfile, string $message): void
     {
         try {
-            $this->sms->send($driverProfile->user->phone, config('app.name').': '.$message);
+            $this->sms->send($driverProfile->user->phone, config('services.sms.prefix').': '.$message);
         } catch (SmsDeliveryFailed $exception) {
             report($exception);
         }

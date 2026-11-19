@@ -31,6 +31,10 @@ return [
     'sms' => [
         'driver' => env('SMS_DRIVER', 'log'),
 
+        // Every text starts with this, and the telcos expect it to be the approved sender name (Semaphore asks for a
+        // sample that starts with it). It falls back to the sender name, then to the name of the app.
+        'prefix' => env('SMS_PREFIX') ?? env('SEMAPHORE_SENDER_NAME') ?? env('APP_NAME', 'Laravel'),
+
         // For trying the app on a phone before the SMS provider is set up: any 6-digit code signs in.
         // It only works while APP_ENV is "local", so it can never open a production server.
         'accept_any_code' => (bool) env('SMS_ACCEPT_ANY_CODE', false),

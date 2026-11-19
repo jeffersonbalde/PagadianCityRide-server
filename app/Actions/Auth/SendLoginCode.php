@@ -38,7 +38,7 @@ class SendLoginCode
         try {
             $this->sms->send($phone, sprintf(
                 '%s: Your code is %s. It expires in %d minutes. Do not share it with anyone.',
-                config('app.name'),
+                config('services.sms.prefix'),
                 $code,
                 self::EXPIRES_IN_MINUTES,
             ));

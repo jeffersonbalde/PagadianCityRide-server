@@ -4,14 +4,16 @@ use App\Models\PhoneVerificationCode;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 
-it('returns 202 and texts a code to the phone number', function () {
+it('returns 202 and texts a code to the phone number, starting with the sender name', function () {
+    config(['services.sms.prefix' => 'PagCityRide']);
+
     $response = $this->postJson(route('api.v1.auth.login-code.store'), ['phone' => '0917 123 4567']);
 
     $response->assertAccepted()->assertExactJson(['message' => 'We sent a code to your phone.']);
 
     expect(sms()->sent())->toHaveCount(1);
     expect(sms()->sent()[0]['phone'])->toBe('+639171234567');
-    expect(sms()->sent()[0]['message'])->toContain('PagadianCityRide')->toContain('expires in 5 minutes');
+    expect(sms()->sent()[0]['message'])->toStartWith('PagCityRide: Your code is ')->toContain('expires in 5 minutes');
 
     $code = sms()->lastCodeFor('+639171234567');
     $record = PhoneVerificationCode::sole();

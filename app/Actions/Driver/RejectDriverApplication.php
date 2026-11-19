@@ -52,7 +52,7 @@ class RejectDriverApplication
         try {
             $this->sms->send(
                 $driverProfile->user->phone,
-                config('app.name').': Your driver application needs changes. Open the app to see what to fix.',
+                config('services.sms.prefix').': Your driver application needs changes. Open the app to see what to fix.',
             );
         } catch (SmsDeliveryFailed $exception) {
             report($exception);

@@ -39,7 +39,7 @@ class SendTestSms extends Command
         $driver = config('services.sms.driver');
 
         try {
-            $sms->send($phone, config('app.name').': this is a test text. If you can read this, texts work.');
+            $sms->send($phone, config('services.sms.prefix').': this is a test text. If you can read this, texts work.');
         } catch (SmsDeliveryFailed $exception) {
             $this->error("The \"{$driver}\" SMS provider did not take the text: ".($exception->getPrevious()?->getMessage() ?? $exception->getMessage()));
 
