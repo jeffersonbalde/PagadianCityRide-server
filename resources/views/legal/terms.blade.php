@@ -16,7 +16,7 @@
 
     <h2>Your account</h2>
     <ul>
-        <li>Give your real mobile number and keep your sign-in codes to yourself.</li>
+        <li>Give your real email address and mobile number, and keep your sign-in codes to yourself.</li>
         <li>You are responsible for what happens in your account.</li>
         <li>You can delete your account at any time. See <a href="{{ route('legal.account-deletion') }}">how to delete your account</a>.</li>
     </ul>

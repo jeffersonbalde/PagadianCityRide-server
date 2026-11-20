@@ -12,7 +12,7 @@
     <h2>What we collect</h2>
     <table>
         <tr><th>Who</th><th>What</th></tr>
-        <tr><td>Everyone</td><td>Your mobile number (to sign in), your name, the role you chose (passenger or driver), a token that lets us send notifications to your phone, and the code we text you to sign in.</td></tr>
+        <tr><td>Everyone</td><td>Your email address (to sign in) and the code we email you, your mobile number (typed in so a driver and a passenger can call each other, and not checked at first), your name, the role you chose (passenger or driver), a token that lets us send notifications to your phone, and the code we text you to sign in.</td></tr>
         <tr><td>Passengers</td><td>The pick-up point and the destination of each trip, the trip status and times, the note you write for the driver, your rating and review, chat messages and photos you send in a trip, reports you make, and the emergency contacts you add (name and mobile number).</td></tr>
         <tr><td>Drivers</td><td>Your photo, driver's license, tricycle plate papers and franchise (as photos), your tricycle and plate number, and your location while you are online.</td></tr>
     </table>
@@ -46,7 +46,8 @@
     <p>They handle data for us only to do their job:</p>
     <ul>
         <li><strong>DigitalOcean</strong> hosts our server, database and private file storage (in Singapore).</li>
-        <li><strong>Semaphore</strong> sends the text messages: sign-in codes, driver updates and emergency alerts. It receives the mobile number and the text.</li>
+        <li><strong>Google (Gmail)</strong> sends the emails: the sign-in code and the answer to a driver application. It receives the email address and the message.</li>
+        <li><strong>Semaphore</strong> sends the text messages: the emergency alerts to your emergency contacts, and later also the proof of your mobile number. It receives the mobile number and the text.</li>
         <li><strong>Expo</strong> delivers push notifications to your phone.</li>
         <li><strong>Google Maps</strong> draws the map on Android phones.</li>
         <li><strong>A road routing service based on OpenStreetMap data</strong> receives the pick-up and destination points to draw the road route.</li>

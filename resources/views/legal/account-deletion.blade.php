@@ -15,8 +15,8 @@
 
     <h2>What is erased</h2>
     <ul>
-        <li><strong>Passengers:</strong> your name, mobile number, emergency contacts, trips, chat messages and photos, and your notifications.</li>
-        <li><strong>Drivers:</strong> your name, mobile number, tricycle details, documents (photo, license, plate papers, franchise) and reviews. A trip you drove stays for the passenger, without your details.</li>
+        <li><strong>Passengers:</strong> your name, email address, mobile number, emergency contacts, trips, chat messages and photos, and your notifications.</li>
+        <li><strong>Drivers:</strong> your name, email address, mobile number, tricycle details, documents (photo, license, plate papers, franchise) and reviews. A trip you drove stays for the passenger, without your details.</li>
     </ul>
     <p>This cannot be undone.</p>
 
@@ -27,6 +27,6 @@
         @else
             Write to us through the Google Play page of the app
         @endif
-        from the phone number of the account and ask us to delete it. We will answer you and delete the account.
+        from the email address of the account and ask us to delete it. We will answer you and delete the account.
     </p>
 @endsection
