@@ -20,6 +20,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn (): ?string => null);
 
+        // App Platform puts the app behind its own proxy that speaks https to the people and http to the app. Trust
+        // what the proxy says (X-Forwarded-Proto), or every link of the admin website is made with http and the
+        // browser blocks them on an https page.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
         ]);
