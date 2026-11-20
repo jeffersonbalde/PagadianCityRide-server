@@ -6,22 +6,21 @@ use App\AlertType;
 use App\DocumentStatus;
 use App\DocumentType;
 use App\DriverStatus;
-use App\Exceptions\SmsDeliveryFailed;
 use App\Models\DriverProfile;
 use App\Models\User;
 use App\Notifications\Alert;
-use App\Services\Sms\SmsGateway;
+use App\Services\UserMessenger;
 use Illuminate\Support\Facades\DB;
 
 class RejectDriverApplication
 {
-    public function __construct(private SmsGateway $sms) {}
+    public function __construct(private UserMessenger $messenger) {}
 
     /**
      * Send the application back to the driver with a reason. The documents in
      * the list are marked as rejected, so the driver only replaces those. The
-     * driver is told by text message, and a text that cannot be sent does not
-     * undo the rejection.
+     * driver is told by text message or by email, and a message that cannot be
+     * sent does not undo the rejection.
      *
      * @param  list<DocumentType>  $documentTypes
      */
@@ -49,14 +48,7 @@ class RejectDriverApplication
             return $current;
         });
 
-        try {
-            $this->sms->send(
-                $driverProfile->user->phone,
-                config('services.sms.prefix').': Your driver application needs changes. Open the app to see what to fix.',
-            );
-        } catch (SmsDeliveryFailed $exception) {
-            report($exception);
-        }
+        $this->messenger->send($driverProfile->user, 'Your driver application needs changes', 'Your driver application needs changes. Open the app to see what to fix.');
 
         $driverProfile->user->notify(new Alert(AlertType::DriverRejected));
 

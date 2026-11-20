@@ -3,11 +3,14 @@
 use App\DocumentStatus;
 use App\DriverStatus;
 use App\Exceptions\SmsDeliveryFailed;
+use App\Mail\PlainMessageMail;
 use App\Models\DriverProfile;
 use App\Models\User;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Laravel\Sanctum\Sanctum;
+use Symfony\Component\Mailer\Exception\TransportException;
 
 it('approves the application, verifies the documents and texts the driver', function () {
     $this->freezeTime();
@@ -83,5 +86,36 @@ it('keeps the approval when the text message cannot be sent', function () {
         ->assertJsonPath('status', 'approved');
 
     Exceptions::assertReported(SmsDeliveryFailed::class);
+    expect($profile->fresh()->status)->toBe(DriverStatus::Approved);
+});
+
+it('emails the driver instead of texting when the phone number is not verified', function () {
+    Mail::fake();
+
+    $driver = User::factory()->driver()->create(['email' => 'ramil@example.com', 'phone' => '+639171234567', 'phone_verified_at' => null]);
+    $profile = DriverProfile::factory()->for($driver)->submitted()->create();
+
+    Sanctum::actingAs(User::factory()->admin()->create());
+
+    $this->postJson(route('api.v1.admin.driver-profiles.approval.store', $profile))->assertOk();
+
+    expect(sms()->sent())->toBeEmpty();
+
+    Mail::assertSent(PlainMessageMail::class, fn (PlainMessageMail $mail): bool => $mail->hasTo('ramil@example.com')
+        && str_contains($mail->body, 'approved'));
+});
+
+it('still approves when the email cannot be sent', function () {
+    Exceptions::fake();
+    Mail::shouldReceive('to->send')->andThrow(new TransportException('connection refused'));
+
+    $driver = User::factory()->driver()->create(['email' => 'ramil@example.com', 'phone_verified_at' => null]);
+    $profile = DriverProfile::factory()->for($driver)->submitted()->create();
+
+    Sanctum::actingAs(User::factory()->admin()->create());
+
+    $this->postJson(route('api.v1.admin.driver-profiles.approval.store', $profile))->assertOk();
+
+    Exceptions::assertReported(TransportException::class);
     expect($profile->fresh()->status)->toBe(DriverStatus::Approved);
 });

@@ -5,21 +5,20 @@ namespace App\Actions\Driver;
 use App\AlertType;
 use App\DocumentStatus;
 use App\DriverStatus;
-use App\Exceptions\SmsDeliveryFailed;
 use App\Models\DriverProfile;
 use App\Models\User;
 use App\Notifications\Alert;
-use App\Services\Sms\SmsGateway;
+use App\Services\UserMessenger;
 use Illuminate\Support\Facades\DB;
 
 class ApproveDriverApplication
 {
-    public function __construct(private SmsGateway $sms) {}
+    public function __construct(private UserMessenger $messenger) {}
 
     /**
      * Approve the application: every document counts as verified, and the
-     * driver is told by text message. A text that cannot be sent does not undo
-     * the approval.
+     * driver is told by text message or by email. A message that cannot be sent
+     * does not undo the approval.
      */
     public function handle(DriverProfile $driverProfile, User $admin): DriverProfile
     {
@@ -43,19 +42,10 @@ class ApproveDriverApplication
             return $current;
         });
 
-        $this->tell($driverProfile, 'Your driver application is approved. You can now go online.');
+        $this->messenger->send($driverProfile->user, 'Your driver application is approved', 'Your driver application is approved. You can now go online.');
 
         $driverProfile->user->notify(new Alert(AlertType::DriverApproved));
 
         return $driverProfile;
-    }
-
-    private function tell(DriverProfile $driverProfile, string $message): void
-    {
-        try {
-            $this->sms->send($driverProfile->user->phone, config('services.sms.prefix').': '.$message);
-        } catch (SmsDeliveryFailed $exception) {
-            report($exception);
-        }
     }
 }

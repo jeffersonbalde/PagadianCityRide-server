@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -64,6 +65,17 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute(1)->by('code-minute:'.$phone),
                 Limit::perHour(5)->by('code-hour:'.$phone),
                 Limit::perHour(20)->by('code-ip:'.$request->ip()),
+            ];
+        });
+
+        // An email costs nothing, but the free mail account has a daily limit, so the same limits hold.
+        RateLimiter::for('email-code', function (Request $request): array {
+            $email = Str::lower(trim((string) $request->input('email')));
+
+            return [
+                Limit::perMinute(1)->by('email-code-minute:'.$email),
+                Limit::perHour(5)->by('email-code-hour:'.$email),
+                Limit::perHour(20)->by('email-code-ip:'.$request->ip()),
             ];
         });
 

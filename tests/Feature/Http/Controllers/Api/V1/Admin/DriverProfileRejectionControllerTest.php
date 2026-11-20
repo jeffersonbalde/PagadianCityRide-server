@@ -3,8 +3,10 @@
 use App\DocumentStatus;
 use App\DocumentType;
 use App\DriverStatus;
+use App\Mail\PlainMessageMail;
 use App\Models\DriverProfile;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 use Laravel\Sanctum\Sanctum;
 
 it('sends the application back with a reason and texts the driver', function () {
@@ -98,3 +100,21 @@ it('returns 403 when the application is not waiting for review', function (strin
 
     expect(sms()->sent())->toBeEmpty();
 })->with(['approved', 'rejected']);
+
+it('emails the driver instead of texting when the phone number is not verified', function () {
+    Mail::fake();
+
+    $driver = User::factory()->driver()->create(['email' => 'ramil@example.com', 'phone' => '+639171234567', 'phone_verified_at' => null]);
+    $profile = DriverProfile::factory()->for($driver)->submitted()->create();
+
+    Sanctum::actingAs(User::factory()->admin()->create());
+
+    $this->postJson(route('api.v1.admin.driver-profiles.rejection.store', $profile), ['reason' => 'The franchise photo is blurry.'])
+        ->assertOk();
+
+    expect(sms()->sent())->toBeEmpty();
+
+    Mail::assertSent(PlainMessageMail::class, fn (PlainMessageMail $mail): bool => $mail->hasTo('ramil@example.com')
+        && str_contains($mail->body, 'needs changes')
+        && ! str_contains($mail->body, 'blurry'));
+});

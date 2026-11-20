@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\V1\AlertDestroyController;
 use App\Http\Controllers\Api\V1\AlertReadController;
 use App\Http\Controllers\Api\V1\AllAlertsDestroyController;
 use App\Http\Controllers\Api\V1\AllAlertsReadController;
+use App\Http\Controllers\Api\V1\Auth\EmailLoginCodeController;
+use App\Http\Controllers\Api\V1\Auth\EmailTokenController;
 use App\Http\Controllers\Api\V1\Auth\LoginCodeController;
 use App\Http\Controllers\Api\V1\Auth\TokenController;
 use App\Http\Controllers\Api\V1\ChatController;
@@ -54,6 +56,15 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('token', [TokenController::class, 'store'])
             ->middleware('throttle:login-token')
             ->name('token.store');
+
+        // The same sign in with an email address and a code that is emailed.
+        Route::post('email-code', [EmailLoginCodeController::class, 'store'])
+            ->middleware('throttle:email-code')
+            ->name('email-code.store');
+
+        Route::post('email-token', [EmailTokenController::class, 'store'])
+            ->middleware('throttle:login-token')
+            ->name('email-token.store');
 
         Route::delete('token', [TokenController::class, 'destroy'])
             ->middleware('auth:sanctum')

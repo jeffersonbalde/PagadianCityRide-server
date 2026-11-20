@@ -20,15 +20,24 @@ class MeController extends Controller
     }
 
     /**
-     * Save the name of the signed-in person. A new account has no name until
-     * the app asks for it after the first sign-in. The phone number and the
+     * Save the name of the signed-in person, and the mobile number when one is sent. A new account has
+     * no name until the app asks for it after the first sign-in. A mobile number that is typed in is not
+     * verified until a text message can prove it, so a new number clears the check. The email and the
      * role cannot be changed here.
      */
     public function update(UpdateMeRequest $request): UserResource
     {
-        $request->user()->update(['name' => trim($request->validated('name'))]);
+        $user = $request->user();
+        $user->name = trim($request->validated('name'));
 
-        return UserResource::make($request->user()->load('driverProfile'));
+        if ($request->validated('phone') !== null && $request->validated('phone') !== $user->phone) {
+            $user->phone = $request->validated('phone');
+            $user->phone_verified_at = null;
+        }
+
+        $user->save();
+
+        return UserResource::make($user->load('driverProfile'));
     }
 
     /**

@@ -27,7 +27,10 @@ it('returns the signed-in person and nothing private', function () {
         ->assertExactJson([
             'id' => $user->id,
             'name' => 'Maria Santos',
+            'email' => $user->email,
+            'email_verified' => true,
             'phone' => '+639171234567',
+            'phone_verified' => true,
             'role' => 'passenger',
         ]);
 });
@@ -41,7 +44,10 @@ it('returns no application status for a driver who has not started it', function
         ->assertExactJson([
             'id' => $driver->id,
             'name' => 'Ramil Mendoza',
+            'email' => $driver->email,
+            'email_verified' => true,
             'phone' => '+639171234567',
+            'phone_verified' => true,
             'role' => 'driver',
             'driver_status' => null,
         ]);
@@ -77,7 +83,10 @@ describe('update', function () {
             ->assertExactJson([
                 'id' => $user->id,
                 'name' => 'Maria Santos',
+                'email' => $user->email,
+                'email_verified' => true,
                 'phone' => '+639171234567',
+                'phone_verified' => true,
                 'role' => 'passenger',
             ]);
 
@@ -95,15 +104,68 @@ describe('update', function () {
             ->assertJsonPath('driver_status', 'submitted');
     });
 
-    it('does not change the phone number or the role', function () {
+    it('does not change the role or the email', function () {
+        $user = User::factory()->create(['email' => 'maria@example.com']);
+
+        $this->withToken($user->createToken('mobile')->plainTextToken)
+            ->putJson(route('api.v1.me.update'), ['name' => 'Maria Santos', 'role' => 'admin', 'email' => 'other@example.com'])
+            ->assertOk();
+
+        expect($user->fresh()->only(['email', 'role']))->toBe(['email' => 'maria@example.com', 'role' => UserRole::Passenger]);
+    });
+
+    it('keeps the phone number when none is sent', function () {
         $user = User::factory()->create(['phone' => '+639171234567']);
 
         $this->withToken($user->createToken('mobile')->plainTextToken)
-            ->putJson(route('api.v1.me.update'), ['name' => 'Maria Santos', 'phone' => '+639999999999', 'role' => 'admin'])
-            ->assertOk();
-
-        expect($user->fresh()->only(['phone', 'role']))->toBe(['phone' => '+639171234567', 'role' => UserRole::Passenger]);
+            ->putJson(route('api.v1.me.update'), ['name' => 'Maria Santos'])
+            ->assertOk()
+            ->assertJsonPath('phone', '+639171234567')
+            ->assertJsonPath('phone_verified', true);
     });
+
+    it('saves a phone number typed in any way, and does not count it as verified', function () {
+        $user = User::factory()->create(['phone' => null, 'phone_verified_at' => null]);
+
+        $this->withToken($user->createToken('mobile')->plainTextToken)
+            ->putJson(route('api.v1.me.update'), ['name' => 'Maria Santos', 'phone' => '0917 123 4567'])
+            ->assertOk()
+            ->assertJsonPath('phone', '+639171234567')
+            ->assertJsonPath('phone_verified', false);
+
+        expect($user->fresh()->phone)->toBe('+639171234567');
+    });
+
+    it('clears the verification when the phone number changes, and keeps it when the same number is sent again', function () {
+        $user = User::factory()->create(['phone' => '+639171234567']);
+        $token = $user->createToken('mobile')->plainTextToken;
+
+        $this->withToken($token)
+            ->putJson(route('api.v1.me.update'), ['name' => 'Maria Santos', 'phone' => '09171234567'])
+            ->assertOk()
+            ->assertJsonPath('phone_verified', true);
+
+        $this->withToken($token)
+            ->putJson(route('api.v1.me.update'), ['name' => 'Maria Santos', 'phone' => '09181234567'])
+            ->assertOk()
+            ->assertJsonPath('phone', '+639181234567')
+            ->assertJsonPath('phone_verified', false);
+    });
+
+    it('returns 422 when the phone number is not valid or belongs to someone else', function (string $phone, string $message) {
+        User::factory()->create(['phone' => '+639181234567']);
+        $user = User::factory()->create(['phone' => null]);
+
+        $this->withToken($user->createToken('mobile')->plainTextToken)
+            ->putJson(route('api.v1.me.update'), ['name' => 'Maria Santos', 'phone' => $phone])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['phone' => $message]);
+
+        expect($user->fresh()->phone)->toBeNull();
+    })->with([
+        'not a mobile number' => ['12345', 'Enter a valid Philippine mobile number, for example 0917 123 4567.'],
+        'used by another account' => ['0918 123 4567', 'This mobile number is already used by another account.'],
+    ]);
 
     it('returns 422 when the name is missing, too short or too long', function (array $payload, string $message) {
         $user = User::factory()->create(['name' => null]);
