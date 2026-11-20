@@ -20,7 +20,8 @@ class SendEmergencyAlert
     public function handle(User $user, float $latitude, float $longitude): array
     {
         $message = sprintf(
-            '%s sent an emergency alert from PagadianCityRide. Location: https://maps.google.com/?q=%s,%s',
+            '%s: %s sent an emergency alert from PagadianCityRide. Location: https://maps.google.com/?q=%s,%s',
+            config('services.sms.prefix'),
             $user->name ?? $user->phone,
             round($latitude, 6),
             round($longitude, 6),

@@ -108,6 +108,7 @@ describe('alert', function () {
     });
 
     it('texts every contact with the name and a map link, and lists who was texted', function () {
+        config(['services.sms.prefix' => 'PagCityRide']);
         $user = User::factory()->create(['name' => 'Maria Santos']);
         EmergencyContact::factory()->for($user)->create(['name' => 'Ana', 'phone' => '+639171112222']);
         EmergencyContact::factory()->for($user)->create(['name' => 'Jose', 'phone' => '+639173334444']);
@@ -122,6 +123,7 @@ describe('alert', function () {
         expect(sms()->sent())->toHaveCount(2);
         expect(sms()->sent()[0]['phone'])->toBe('+639171112222');
         expect(sms()->sent()[0]['message'])
+            ->toStartWith('PagCityRide: ')
             ->toContain('Maria Santos')
             ->toContain('https://maps.google.com/?q=7.8231,123.4402');
     });
