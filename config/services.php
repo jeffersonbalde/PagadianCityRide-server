@@ -40,6 +40,13 @@ return [
         'accept_any_code' => (bool) env('SMS_ACCEPT_ANY_CODE', false),
     ],
 
+    // The reviewers of Google Play cannot read an inbox, so one account of ours signs in with a fixed code and no email
+    // is sent to it. Both values must be set, and only this one address works this way. Remove them when the review is done.
+    'review_account' => [
+        'email' => env('REVIEW_ACCOUNT_EMAIL'),
+        'code' => env('REVIEW_ACCOUNT_CODE'),
+    ],
+
     'semaphore' => [
         'key' => env('SEMAPHORE_API_KEY'),
         'sender_name' => env('SEMAPHORE_SENDER_NAME'),

@@ -7,6 +7,7 @@ use App\Mail\LoginCodeMail;
 use App\Models\EmailLoginCode;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class SendEmailLoginCode
@@ -23,6 +24,10 @@ class SendEmailLoginCode
      */
     public function handle(string $email): void
     {
+        if ($this->isReviewAccount($email)) {
+            return;
+        }
+
         $code = (string) random_int(100000, 999999);
 
         $loginCode = DB::transaction(function () use ($email, $code): EmailLoginCode {
@@ -42,5 +47,18 @@ class SendEmailLoginCode
 
             throw EmailDeliveryFailed::because($exception);
         }
+    }
+
+    /**
+     * The account for the reviewers of the store signs in with a fixed code, so nothing is created or sent for it.
+     */
+    private function isReviewAccount(string $email): bool
+    {
+        $reviewEmail = config('services.review_account.email');
+        $reviewCode = config('services.review_account.code');
+
+        return is_string($reviewEmail) && $reviewEmail !== ''
+            && is_string($reviewCode) && $reviewCode !== ''
+            && hash_equals(Str::lower($reviewEmail), $email);
     }
 }

@@ -101,6 +101,48 @@ it('does not accept the code of another address', function () {
         ->assertUnprocessable();
 });
 
+describe('the account for the store reviewers', function () {
+    beforeEach(function () {
+        config([
+            'services.review_account.email' => 'Review@PagadianCityRide.test',
+            'services.review_account.code' => '135790',
+        ]);
+    });
+
+    it('signs in with the fixed code without any code made before', function () {
+        $this->postJson(route('api.v1.auth.email-token.store'), ['email' => 'review@pagadiancityride.test', 'code' => '135790'])
+            ->assertOk()
+            ->assertJsonPath('user.email', 'review@pagadiancityride.test')
+            ->assertJsonPath('user.role', 'passenger');
+
+        expect(User::where('email', 'review@pagadiancityride.test')->sole()->email_verified_at)->not->toBeNull();
+    });
+
+    it('does not accept a wrong code for that address', function () {
+        $this->postJson(route('api.v1.auth.email-token.store'), ['email' => 'review@pagadiancityride.test', 'code' => '000000'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['code' => 'The code is wrong or has expired.']);
+
+        $this->assertDatabaseCount('users', 0);
+    });
+
+    it('does not let the fixed code open any other address', function () {
+        $this->postJson(route('api.v1.auth.email-token.store'), ['email' => EMAIL_FOR_TOKEN, 'code' => '135790'])
+            ->assertUnprocessable();
+
+        $this->assertDatabaseCount('users', 0);
+    });
+
+    it('does nothing when only one of the two settings is filled in', function (string $missing) {
+        config(["services.review_account.{$missing}" => null]);
+
+        $this->postJson(route('api.v1.auth.email-token.store'), ['email' => 'review@pagadiancityride.test', 'code' => '135790'])
+            ->assertUnprocessable();
+
+        $this->assertDatabaseCount('users', 0);
+    })->with(['email', 'code']);
+});
+
 it('does not accept a code twice', function () {
     EmailLoginCode::factory()->create(['email' => EMAIL_FOR_TOKEN, 'code' => CODE_FOR_TOKEN]);
     $body = ['email' => EMAIL_FOR_TOKEN, 'code' => CODE_FOR_TOKEN];

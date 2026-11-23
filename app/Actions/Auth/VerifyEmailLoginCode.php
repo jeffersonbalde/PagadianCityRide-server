@@ -7,6 +7,7 @@ use App\Models\User;
 use App\UserRole;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class VerifyEmailLoginCode
 {
@@ -21,6 +22,10 @@ class VerifyEmailLoginCode
     public function handle(string $email, string $code, UserRole $role): ?User
     {
         if ($this->acceptsAnyCode()) {
+            return $this->signIn($email, $role);
+        }
+
+        if ($this->isReviewAccountCode($email, $code)) {
             return $this->signIn($email, $role);
         }
 
@@ -54,6 +59,22 @@ class VerifyEmailLoginCode
     private function acceptsAnyCode(): bool
     {
         return config('services.sms.accept_any_code') === true && app()->environment('local');
+    }
+
+    /**
+     * The account for the reviewers of the store: the fixed code of that one address signs in. Any other address, or a
+     * wrong code, goes the normal way. It does nothing when the two settings are not both filled in.
+     */
+    private function isReviewAccountCode(string $email, string $code): bool
+    {
+        $reviewEmail = config('services.review_account.email');
+        $reviewCode = config('services.review_account.code');
+
+        if (! is_string($reviewEmail) || $reviewEmail === '' || ! is_string($reviewCode) || $reviewCode === '') {
+            return false;
+        }
+
+        return hash_equals(Str::lower($reviewEmail), $email) && hash_equals($reviewCode, $code);
     }
 
     private function signIn(string $email, UserRole $role): User

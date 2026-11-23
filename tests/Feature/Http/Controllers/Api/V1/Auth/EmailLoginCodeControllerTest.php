@@ -72,6 +72,26 @@ it('returns 429 when the same address asks twice within a minute, even when type
     $this->postJson(route('api.v1.auth.email-code.store'), ['email' => 'MARIA@example.com'])->assertTooManyRequests();
 });
 
+it('returns 202 without sending an email or making a code for the account of the store reviewers', function () {
+    config([
+        'services.review_account.email' => 'Review@PagadianCityRide.test',
+        'services.review_account.code' => '135790',
+    ]);
+
+    $this->postJson(route('api.v1.auth.email-code.store'), ['email' => 'review@pagadiancityride.test'])->assertAccepted();
+
+    Mail::assertNothingSent();
+    $this->assertDatabaseCount('email_login_codes', 0);
+});
+
+it('still emails a code to the review address when its fixed code is not set', function () {
+    config(['services.review_account.email' => 'review@pagadiancityride.test', 'services.review_account.code' => null]);
+
+    $this->postJson(route('api.v1.auth.email-code.store'), ['email' => 'review@pagadiancityride.test'])->assertAccepted();
+
+    Mail::assertSent(LoginCodeMail::class);
+});
+
 it('returns 503 and removes the code when the mail server cannot send it', function () {
     Mail::shouldReceive('to->send')->andThrow(new TransportException('connection refused'));
 
