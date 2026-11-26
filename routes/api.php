@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\AlertDestroyController;
 use App\Http\Controllers\Api\V1\AlertReadController;
 use App\Http\Controllers\Api\V1\AllAlertsDestroyController;
 use App\Http\Controllers\Api\V1\AllAlertsReadController;
+use App\Http\Controllers\Api\V1\AppVersionController;
 use App\Http\Controllers\Api\V1\Auth\EmailLoginCodeController;
 use App\Http\Controllers\Api\V1\Auth\EmailTokenController;
 use App\Http\Controllers\Api\V1\Auth\LoginCodeController;
@@ -70,6 +71,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->middleware('auth:sanctum')
             ->name('token.destroy');
     });
+
+    // Asked by the app when it opens: is this version too old to be used? Many phones share one address on
+    // mobile data, so the limit is generous.
+    Route::get('app-version', [AppVersionController::class, 'show'])
+        ->middleware('throttle:600,1')
+        ->name('app-version.show');
 
     // A photo of the chat, with a link that is signed and lasts an hour, see `RideMessage::imageUrl()`.
     Route::get('rides/{ride}/messages/{message}/image', [RideMessageController::class, 'image'])
