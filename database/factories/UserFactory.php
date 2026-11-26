@@ -58,6 +58,17 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that an admin blocked the person.
+     */
+    public function blocked(string $reason = 'Rude to passengers.'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'blocked_at' => now(),
+            'blocked_reason' => $reason,
+        ]);
+    }
+
+    /**
      * Indicate that the model's email address should be unverified.
      */
     public function unverified(): static

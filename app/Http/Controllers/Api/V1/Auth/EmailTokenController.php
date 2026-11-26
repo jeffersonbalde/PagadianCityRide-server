@@ -28,6 +28,12 @@ class EmailTokenController extends Controller
             ]);
         }
 
+        if ($user->isBlocked()) {
+            throw ValidationException::withMessages([
+                'code' => 'This account is blocked. Contact the PagadianCityRide office.',
+            ]);
+        }
+
         $token = $user->createToken($request->validated('device_name') ?? 'mobile');
 
         return response()->json([

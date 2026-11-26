@@ -20,4 +20,16 @@ class PhoneNumber
 
         return '+63'.$matches[1];
     }
+
+    /**
+     * The stored +639XXXXXXXXX number the way people write it here, 0917 123 4567. Anything else is returned as it is.
+     */
+    public static function local(?string $number): ?string
+    {
+        if ($number === null || preg_match('/^\+63(9\d{2})(\d{3})(\d{4})$/', $number, $matches) !== 1) {
+            return $number;
+        }
+
+        return '0'.$matches[1].' '.$matches[2].' '.$matches[3];
+    }
 }

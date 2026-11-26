@@ -38,7 +38,7 @@
     <ul>
         <li>The passenger and the driver of a trip see each other's name, the trip details and the trip chat. The phone number of one is shown to the other only as needed for the trip.</li>
         <li>Your emergency contacts get a text only when you press the emergency button.</li>
-        <li>Admins of {{ config('app.name') }} see driver applications, documents and reports so they can approve drivers and handle problems.</li>
+        <li>Admins of {{ config('app.name') }} see account details, trips, driver applications, documents and reports so they can approve drivers, handle problems and keep the service safe. They read the chat of a trip only when that trip was reported. They can block or delete an account that breaks the terms.</li>
         <li>Nobody else sees your driver documents.</li>
     </ul>
 

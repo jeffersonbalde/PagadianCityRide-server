@@ -55,6 +55,17 @@ it('keeps the role of a person who already has an account', function () {
     $this->assertDatabaseCount('users', 1);
 });
 
+it('gives a blocked person no token, even with the right code', function () {
+    $user = User::factory()->blocked()->create(['email' => EMAIL_FOR_TOKEN]);
+    EmailLoginCode::factory()->create(['email' => EMAIL_FOR_TOKEN, 'code' => CODE_FOR_TOKEN]);
+
+    $this->postJson(route('api.v1.auth.email-token.store'), ['email' => EMAIL_FOR_TOKEN, 'code' => CODE_FOR_TOKEN])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['code' => 'blocked']);
+
+    expect($user->tokens()->count())->toBe(0);
+});
+
 it('returns 422 when the role is not one a person can pick', function (string $role) {
     EmailLoginCode::factory()->create(['email' => EMAIL_FOR_TOKEN, 'code' => CODE_FOR_TOKEN]);
 

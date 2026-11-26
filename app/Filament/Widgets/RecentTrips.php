@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Resources\TripResource;
 use App\Models\Ride;
 use App\RideStatus;
 use Filament\Tables\Columns\TextColumn;
@@ -52,6 +53,7 @@ class RecentTrips extends TableWidget
                         default => 'warning',
                     }),
             ])
+            ->recordUrl(fn (Ride $record): string => TripResource::getUrl('view', ['record' => $record]))
             ->paginated([10, 25])
             ->defaultPaginationPageOption(10)
             ->poll('30s')

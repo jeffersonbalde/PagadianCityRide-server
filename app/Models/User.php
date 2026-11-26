@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -46,7 +47,45 @@ class User extends Authenticatable implements FilamentUser
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->role === UserRole::Admin;
+        return $this->role === UserRole::Admin && ! $this->isBlocked();
+    }
+
+    /**
+     * An admin blocked this person, so they cannot sign in.
+     */
+    public function isBlocked(): bool
+    {
+        return $this->blocked_at !== null;
+    }
+
+    /**
+     * The admin who blocked this person.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function blocker(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'blocked_by');
+    }
+
+    /**
+     * The reports this person made about somebody else.
+     *
+     * @return HasMany<RideReport, $this>
+     */
+    public function reportsMade(): HasMany
+    {
+        return $this->hasMany(RideReport::class, 'reporter_id');
+    }
+
+    /**
+     * The reports somebody else made about this person.
+     *
+     * @return HasMany<RideReport, $this>
+     */
+    public function reportsReceived(): HasMany
+    {
+        return $this->hasMany(RideReport::class, 'reported_user_id');
     }
 
     /**
@@ -109,6 +148,7 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'phone_verified_at' => 'datetime',
+            'blocked_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];

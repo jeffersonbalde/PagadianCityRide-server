@@ -30,6 +30,17 @@ describe('store', function () {
         expect($code->fresh()->consumed_at)->not->toBeNull();
     });
 
+    it('gives a blocked person no token, even with the right code', function () {
+        $user = User::factory()->blocked()->create(['phone' => TEST_PHONE]);
+        PhoneVerificationCode::factory()->create(['phone' => TEST_PHONE, 'code' => TEST_CODE]);
+
+        $this->postJson(route('api.v1.auth.token.store'), ['phone' => TEST_PHONE, 'code' => TEST_CODE])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['code' => 'blocked']);
+
+        expect($user->tokens()->count())->toBe(0);
+    });
+
     it('creates a driver when the person signs up as a driver', function () {
         PhoneVerificationCode::factory()->create(['phone' => TEST_PHONE, 'code' => TEST_CODE]);
 
