@@ -7,14 +7,14 @@ return [
     | Matching
     |--------------------------------------------------------------------------
     |
-    | A driver sees the passengers who wait within this many meters (in a
-    | straight line), and a passenger sees the drivers who are online within the
-    | same distance. A driver whose location is older than the number of minutes
-    | below counts as gone.
+    | A passenger sees every driver who is online, and a driver sees every
+    | passenger who waits, however far, nearest first. To set a limit again, give
+    | a number of meters (in a straight line); 0 means no limit. A driver whose
+    | location is older than the number of minutes below counts as gone.
     |
     */
 
-    'search_radius_meters' => (int) env('RIDES_SEARCH_RADIUS_METERS', 3000),
+    'search_radius_meters' => ((int) env('RIDES_SEARCH_RADIUS_METERS', 0)) ?: null,
 
     'driver_location_stale_after_minutes' => (int) env('RIDES_DRIVER_LOCATION_STALE_MINUTES', 3),
 

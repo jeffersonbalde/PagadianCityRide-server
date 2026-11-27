@@ -61,10 +61,32 @@ it('counts the seconds the passenger has waited', function () {
         ->assertJsonPath('0.requested_at', $ride->created_at->toIso8601String());
 });
 
-it('leaves out requests that are too far or already taken, cancelled or expired', function () {
+it('lists a passenger however far away while there is no distance limit', function () {
+    $far = Ride::factory()->pickupAt(7.9500, 123.4402)->create();
+
+    Sanctum::actingAs(onlineDriver());
+
+    $this->getJson(route('api.v1.driver.waiting-rides.index'))
+        ->assertOk()
+        ->assertJsonPath('*.id', [$far->id])
+        ->assertJsonPath('0.distance_to_pickup_meters', fn (float $meters) => $meters > 13000);
+});
+
+it('leaves out requests beyond the distance limit when one is set', function () {
+    config(['rides.search_radius_meters' => 3000]);
+    $near = Ride::factory()->create();
+    Ride::factory()->pickupAt(7.9000, 123.4402)->create();
+
+    Sanctum::actingAs(onlineDriver());
+
+    $this->getJson(route('api.v1.driver.waiting-rides.index'))
+        ->assertOk()
+        ->assertJsonPath('*.id', [$near->id]);
+});
+
+it('leaves out requests that are already taken, cancelled or expired', function () {
     $driver = onlineDriver();
     $visible = Ride::factory()->create();
-    Ride::factory()->pickupAt(7.9000, 123.4402)->create();
     Ride::factory()->accepted()->create();
     Ride::factory()->cancelled()->create();
     Ride::factory()->expired()->create();

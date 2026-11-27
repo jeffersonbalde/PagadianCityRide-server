@@ -34,9 +34,28 @@ describe('a new request', function () {
         Notification::assertNotSentTo($passenger, Alert::class);
     });
 
-    it('skips drivers who are far, offline, busy or not approved', function () {
-        $far = onlineDriver(7.9000, 123.4402);
+    it('tells a free driver however far away while there is no distance limit', function () {
+        $far = onlineDriver(7.9500, 123.4402);
 
+        Sanctum::actingAs(User::factory()->create());
+        $this->postJson(route('api.v1.rides.store'), rideRequestPayload())->assertCreated();
+
+        assertAlertSent($far, AlertType::NewRideNearby);
+    });
+
+    it('skips drivers beyond the distance limit when one is set', function () {
+        config(['rides.search_radius_meters' => 3000]);
+        $far = onlineDriver(7.9000, 123.4402);
+        $near = onlineDriver();
+
+        Sanctum::actingAs(User::factory()->create());
+        $this->postJson(route('api.v1.rides.store'), rideRequestPayload())->assertCreated();
+
+        assertAlertSent($near, AlertType::NewRideNearby);
+        Notification::assertNotSentTo($far, Alert::class);
+    });
+
+    it('skips drivers who are offline, busy or not approved', function () {
         $offline = onlineDriver();
         $offline->driverProfile->update(['is_online' => false]);
 
@@ -53,7 +72,7 @@ describe('a new request', function () {
 
         assertAlertSent($free, AlertType::NewRideNearby);
 
-        foreach ([$far, $offline, $busy, $notApproved] as $driver) {
+        foreach ([$offline, $busy, $notApproved] as $driver) {
             Notification::assertNotSentTo($driver, Alert::class);
         }
     });

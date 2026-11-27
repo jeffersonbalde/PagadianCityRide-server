@@ -47,13 +47,32 @@ it('lists the nearest driver first', function () {
         ->assertJsonPath('drivers.1.latitude', 7.84);
 });
 
-it('leaves out drivers who are offline, far away, stale or not approved', function () {
+it('shows a driver however far away while there is no distance limit', function () {
+    onlineDriver(7.9500, 123.4402);
+
+    Sanctum::actingAs(User::factory()->create());
+
+    $this->getJson(nearbyUrl())
+        ->assertOk()
+        ->assertJsonPath('count', 1)
+        ->assertJsonPath('nearest_meters', fn (int $meters) => $meters > 13000);
+});
+
+it('leaves out drivers beyond the distance limit when one is set', function () {
+    config(['rides.search_radius_meters' => 3000]);
+    onlineDriver(7.8240, 123.4402);
+    onlineDriver(7.9500, 123.4402);
+
+    Sanctum::actingAs(User::factory()->create());
+
+    $this->getJson(nearbyUrl())->assertOk()->assertJsonPath('count', 1);
+});
+
+it('leaves out drivers who are offline, stale or not approved', function () {
     onlineDriver();
 
     $offline = onlineDriver();
     $offline->driverProfile->update(['is_online' => false]);
-
-    onlineDriver(7.9500, 123.4402);
 
     $stale = onlineDriver();
     $stale->driverProfile->update(['located_at' => now()->subMinutes(4)]);

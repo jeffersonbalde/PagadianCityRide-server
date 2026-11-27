@@ -80,20 +80,25 @@ class DriverProfile extends Model
     }
 
     /**
-     * Approved drivers who are online, have a recent location and are inside
-     * the square around the point. Measure the exact distance afterwards.
+     * Approved drivers who are online and have a recent location. With a limit,
+     * only those inside the square around the point: measure the exact distance
+     * afterwards.
      *
      * @param  Builder<DriverProfile>  $query
      */
-    public function scopeAvailableNear(Builder $query, float $latitude, float $longitude, int $radiusMeters): void
+    public function scopeAvailableNear(Builder $query, float $latitude, float $longitude, ?int $radiusMeters): void
     {
-        $box = Distance::boundingBox($latitude, $longitude, $radiusMeters);
-
         $query->where('status', DriverStatus::Approved)
             ->where('is_online', true)
             ->where('located_at', '>=', now()->subMinutes(config('rides.driver_location_stale_after_minutes')))
-            ->whereBetween('latitude', [$box['minLatitude'], $box['maxLatitude']])
-            ->whereBetween('longitude', [$box['minLongitude'], $box['maxLongitude']]);
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->when($radiusMeters !== null, function (Builder $query) use ($latitude, $longitude, $radiusMeters): void {
+                $box = Distance::boundingBox($latitude, $longitude, $radiusMeters);
+
+                $query->whereBetween('latitude', [$box['minLatitude'], $box['maxLatitude']])
+                    ->whereBetween('longitude', [$box['minLongitude'], $box['maxLongitude']]);
+            });
     }
 
     /**

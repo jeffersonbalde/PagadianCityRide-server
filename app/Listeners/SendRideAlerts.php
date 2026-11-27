@@ -70,7 +70,7 @@ class SendRideAlerts implements ShouldQueue
                 'user' => $profile->user,
                 'meters' => Distance::meters($ride->pickup_latitude, $ride->pickup_longitude, $profile->latitude, $profile->longitude),
             ])
-            ->filter(fn (array $driver): bool => $driver['meters'] <= $radius)
+            ->filter(fn (array $driver): bool => $radius === null || $driver['meters'] <= $radius)
             ->sortBy('meters')
             ->take(config('rides.notify_nearest_drivers'))
             ->pluck('user');

@@ -11,8 +11,8 @@ use Illuminate\Http\Request;
 class NearbyDriverController extends Controller
 {
     /**
-     * The tricycles that are online near the passenger. Only where they are is
-     * shown, never who they are.
+     * The tricycles that are online, nearest to the passenger first. Only where
+     * they are is shown, never who they are.
      */
     public function index(Request $request): JsonResponse
     {
@@ -31,7 +31,7 @@ class NearbyDriverController extends Controller
                 'longitude' => $profile->longitude,
                 'distance_meters' => Distance::meters((float) $validated['latitude'], (float) $validated['longitude'], $profile->latitude, $profile->longitude),
             ])
-            ->filter(fn (array $driver): bool => $driver['distance_meters'] <= $radius)
+            ->filter(fn (array $driver): bool => $radius === null || $driver['distance_meters'] <= $radius)
             ->sortBy('distance_meters')
             ->values();
 
