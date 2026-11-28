@@ -102,6 +102,54 @@ it('puts the chat with the newest message first', function () {
         ->assertJsonPath('1.ride_id', $newer->id);
 });
 
+it('keeps one chat for each person, however many rides the two shared', function () {
+    $first = Ride::factory()->completed()->create();
+    $second = Ride::factory()->for($first->passenger, 'passenger')->completed($first->driver)->create();
+    $third = Ride::factory()->for($first->passenger, 'passenger')->completed($first->driver)->create();
+
+    RideMessage::factory()->create(['ride_id' => $first->id, 'sender_id' => $first->driver_id, 'body' => 'I miss you.']);
+    RideMessage::factory()->create(['ride_id' => $second->id, 'sender_id' => $first->driver_id, 'body' => 'Needs a fix.']);
+
+    Sanctum::actingAs($first->passenger);
+
+    $this->getJson(route('api.v1.chats.index'))
+        ->assertOk()
+        ->assertJsonCount(1)
+        ->assertJsonPath('0.ride_id', $second->id)
+        ->assertJsonPath('0.unread_count', 2)
+        ->assertJsonPath('0.last_message.body', 'Needs a fix.');
+
+    // The third ride has no message, so it does not take the place of a ride somebody wrote on.
+    expect($third->messages()->count())->toBe(0);
+});
+
+it('opens the chat by the ride that is going on, with what was written before', function () {
+    $before = Ride::factory()->completed()->create();
+    RideMessage::factory()->create(['ride_id' => $before->id, 'sender_id' => $before->driver_id, 'body' => 'Thank you.']);
+    $now = Ride::factory()->for($before->passenger, 'passenger')->accepted($before->driver)->create();
+
+    Sanctum::actingAs($before->passenger);
+
+    $this->getJson(route('api.v1.chats.index'))
+        ->assertOk()
+        ->assertJsonCount(1)
+        ->assertJsonPath('0.ride_id', $now->id)
+        ->assertJsonPath('0.ongoing', true)
+        ->assertJsonPath('0.last_message.body', 'Thank you.');
+});
+
+it('does not count or show what a driver wrote who gave the pickup up', function () {
+    $ride = Ride::factory()->accepted()->create();
+    RideMessage::factory()->create(['ride_id' => $ride->id, 'sender_id' => User::factory()->driver()->create()->id, 'body' => 'From the driver before.']);
+
+    Sanctum::actingAs($ride->passenger);
+
+    $this->getJson(route('api.v1.chats.index'))
+        ->assertOk()
+        ->assertJsonPath('0.unread_count', 0)
+        ->assertJsonPath('0.last_message', null);
+});
+
 it('needs a sign in and is not for admins', function () {
     $this->getJson(route('api.v1.chats.index'))->assertUnauthorized();
 

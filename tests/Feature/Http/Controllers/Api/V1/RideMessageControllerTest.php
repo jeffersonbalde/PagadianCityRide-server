@@ -230,6 +230,36 @@ describe('index', function () {
     });
 });
 
+describe('one conversation for two people', function () {
+    it('shows what they wrote on all their rides, oldest first, and marks it as read', function () {
+        $before = Ride::factory()->completed()->create();
+        $now = Ride::factory()->for($before->passenger, 'passenger')->accepted($before->driver)->create();
+        $old = RideMessage::factory()->create(['ride_id' => $before->id, 'sender_id' => $before->driver_id]);
+        $new = RideMessage::factory()->create(['ride_id' => $now->id, 'sender_id' => $now->passenger_id]);
+
+        Sanctum::actingAs($now->passenger);
+
+        $this->getJson(route('api.v1.rides.messages.index', $now))->assertOk()->assertJsonPath('*.id', [$old->id, $new->id]);
+
+        expect($old->fresh()->read_at)->not->toBeNull();
+    });
+
+    it('keeps out the chats with other people', function () {
+        $ride = Ride::factory()->completed()->create();
+        $mine = RideMessage::factory()->create(['ride_id' => $ride->id, 'sender_id' => $ride->passenger_id]);
+        // The same passenger with another driver, the same driver with another passenger, and a driver who gave this pickup up.
+        $otherDriver = Ride::factory()->for($ride->passenger, 'passenger')->completed()->create();
+        RideMessage::factory()->create(['ride_id' => $otherDriver->id, 'sender_id' => $otherDriver->passenger_id]);
+        $otherPassenger = Ride::factory()->completed($ride->driver)->create();
+        RideMessage::factory()->create(['ride_id' => $otherPassenger->id, 'sender_id' => $otherPassenger->passenger_id]);
+        RideMessage::factory()->create(['ride_id' => $ride->id, 'sender_id' => User::factory()->driver()->create()->id]);
+
+        Sanctum::actingAs($ride->driver);
+
+        $this->getJson(route('api.v1.rides.messages.index', $ride))->assertOk()->assertJsonPath('*.id', [$mine->id]);
+    });
+});
+
 describe('unread messages on the ride', function () {
     it('counts what the other person wrote and the reader did not read yet', function () {
         $ride = Ride::factory()->accepted()->create();

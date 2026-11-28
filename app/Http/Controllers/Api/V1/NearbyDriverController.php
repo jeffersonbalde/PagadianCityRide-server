@@ -27,6 +27,7 @@ class NearbyDriverController extends Controller
             ->availableNear((float) $validated['latitude'], (float) $validated['longitude'], $radius)
             ->get(['id', 'latitude', 'longitude'])
             ->map(fn (DriverProfile $profile): array => [
+                'key' => $this->keyOf($profile),
                 'latitude' => $profile->latitude,
                 'longitude' => $profile->longitude,
                 'distance_meters' => Distance::meters((float) $validated['latitude'], (float) $validated['longitude'], $profile->latitude, $profile->longitude),
@@ -39,9 +40,20 @@ class NearbyDriverController extends Controller
             'count' => $drivers->count(),
             'nearest_meters' => $drivers->first()['distance_meters'] ?? null,
             'drivers' => $drivers->map(fn (array $driver): array => [
+                'key' => $driver['key'],
                 'latitude' => $driver['latitude'],
                 'longitude' => $driver['longitude'],
             ])->all(),
         ]);
+    }
+
+    /**
+     * A name for a tricycle that says nothing about who drives it, so the app can
+     * tell the same tricycle from one answer to the next and slide it along. It is
+     * a new one every day, so nobody can be followed from day to day.
+     */
+    private function keyOf(DriverProfile $profile): string
+    {
+        return substr(hash_hmac('sha256', $profile->id.'|'.now()->toDateString(), config('app.key')), 0, 16);
     }
 }

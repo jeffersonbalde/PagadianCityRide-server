@@ -118,6 +118,25 @@ class Ride extends Model
     }
 
     /**
+     * The chat of the two people of this ride: what they wrote to each other on this ride and on every other ride
+     * they shared, so that they have one conversation, as in Messenger. A message stays with the ride it was
+     * written on. What another driver wrote, who gave a pickup up, is not part of it.
+     *
+     * @return Builder<RideMessage>
+     */
+    public function conversation(): Builder
+    {
+        $shared = self::query()
+            ->where('passenger_id', $this->passenger_id)
+            ->where('driver_id', $this->driver_id)
+            ->select('id');
+
+        return RideMessage::query()
+            ->whereIn('ride_id', $shared)
+            ->whereIn('sender_id', [$this->passenger_id, $this->driver_id]);
+    }
+
+    /**
      * Rides that are still going on.
      *
      * @param  Builder<Ride>  $query

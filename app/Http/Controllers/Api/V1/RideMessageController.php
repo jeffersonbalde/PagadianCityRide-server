@@ -18,8 +18,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class RideMessageController extends Controller
 {
     /**
-     * The last messages of the chat, oldest first. With `after`, only the messages after that one. What the other
-     * person wrote counts as read once it is fetched here.
+     * The last messages of the chat of the two people of the ride, oldest first, also those of their other rides,
+     * see `Ride::conversation()`. With `after`, only the messages after that one. What the other person wrote counts
+     * as read once it is fetched here.
      */
     public function index(Request $request, Ride $ride): AnonymousResourceCollection
     {
@@ -28,10 +29,10 @@ class RideMessageController extends Controller
         $after = $request->integer('after');
 
         $messages = $after > 0
-            ? $ride->messages()->where('id', '>', $after)->orderBy('id')->limit(100)->get()
-            : $ride->messages()->latest('id')->limit(100)->get()->reverse()->values();
+            ? $ride->conversation()->where('id', '>', $after)->orderBy('id')->limit(100)->get()
+            : $ride->conversation()->latest('id')->limit(100)->get()->reverse()->values();
 
-        $ride->messages()
+        $ride->conversation()
             ->where('sender_id', '!=', $request->user()->id)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);

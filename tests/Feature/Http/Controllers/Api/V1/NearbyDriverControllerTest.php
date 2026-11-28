@@ -29,10 +29,30 @@ it('counts the online drivers near the passenger and shows only where they are',
         ->assertOk()
         ->assertJsonPath('count', 2)
         ->assertJsonPath('nearest_meters', fn (int $meters) => $meters < 200)
-        ->assertJsonPath('drivers', [
-            ['latitude' => 7.824, 'longitude' => 123.441],
-            ['latitude' => 7.83, 'longitude' => 123.45],
-        ]);
+        ->assertJsonPath('drivers.0.latitude', 7.824)
+        ->assertJsonPath('drivers.0.longitude', 123.441)
+        ->assertJsonPath('drivers.1.latitude', 7.83)
+        ->assertJsonPath('drivers', fn (array $drivers) => array_keys($drivers[0]) === ['key', 'latitude', 'longitude']);
+});
+
+it('gives each tricycle a name that stays while it moves and changes the next day', function () {
+    $this->travelTo(now()->setTime(8, 0));
+    $first = onlineDriver(7.8240, 123.4402);
+    onlineDriver(7.8300, 123.4402);
+
+    Sanctum::actingAs(User::factory()->create());
+
+    $before = $this->getJson(nearbyUrl())->assertOk()->json('drivers.*.key');
+    $first->driverProfile->update(['latitude' => 7.8245]);
+    $afterMoving = $this->getJson(nearbyUrl())->assertOk()->json('drivers.*.key');
+
+    $this->travel(1)->days();
+    DriverProfile::query()->update(['located_at' => now()]);
+    $nextDay = $this->getJson(nearbyUrl())->assertOk()->json('drivers.*.key');
+
+    expect($before[0])->not->toBe($before[1])
+        ->and($afterMoving)->toBe($before)
+        ->and(array_intersect($nextDay, $before))->toBe([]);
 });
 
 it('lists the nearest driver first', function () {
